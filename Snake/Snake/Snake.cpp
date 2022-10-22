@@ -2,18 +2,18 @@
 #include <conio.h>
 #include <windows.h>
 
-const int width = 32;
-const int height = 20;
-const char wallSymbol = '#';
+class Map 
+{
+public :
+	const int width = 32;
+	const int height = 20;
+	const char wallSymbol = '#';
+	// Later would like to make it that the map class itself is responsible for its border logic. Likw whether to wrap around the map or kill the snake
+	/*void borderLogic() 
+	{
 
-int snakeX, snakeY;
-int bodyX[100], bodyY[100];
-int nBody = 0;
-const char snakeHead = 'O';
-const char snakeBody = 'o';
-
-int fruitX, fruitY;
-const char fruitSymbol = 'F';
+	}*/
+};
 
 enum Direction 
 {
@@ -23,17 +23,103 @@ enum Direction
 	DOWN
 };
 
-Direction dir;
+class Snake 
+{
+private:
+	int bodyX[100], bodyY[100];
+	int nBody = 0;
+	const char headSymbol = 'O';
+	const char bodySymbol = 'o';
 
-bool gameEnded = false;
+public:
+	Direction dir;
+	int x, y;
+	void expandBody() 
+	{
+		int prevX = x;
+		int prevY = y;
 
-void Draw() 
+		int prev2X;
+		int prev2Y;
+
+		for (int i = 0; i < nBody; i++)
+		{
+			prev2X = bodyX[i];
+			prev2Y = bodyY[i];
+			bodyX[i] = prevX;
+			bodyY[i] = prevY;
+			prevX = prev2X;
+			prevY = prev2Y;
+		}
+	}
+
+	bool checkForBodyCollision()
+	{
+		for (int i = 0; i < nBody; i++)
+		{
+			return x == bodyX[i] && y == bodyY[i];
+		}
+	}
+
+	void elongate()
+	{
+		nBody++;
+	}
+
+	void move()
+	{
+		switch (dir)
+		{
+		case LEFT:
+			x--;
+			break;
+		case RIGHT:
+			x++;
+			break;
+		case UP:
+			y--;
+			break;
+		case DOWN:
+			y++;
+			break;
+		default:
+			break;
+		}
+	}
+};
+
+class Fruit 
+{
+public:
+	int x, y;
+
+private:
+	const char fruitSymbol = 'F';
+};
+
+class Game
+{
+public:
+	bool gameEnded = false;
+	Snake snake;
+	Fruit fruit;
+	Map map;
+	void Logic();
+	void Draw();
+	void Input();
+
+private:
+
+};
+
+
+void Game::Draw() 
 {
 	system("cls");
 
-	for (int i = 0; i < height; i++)
+	for (int i = 0; i < map.height; i++)
 	{
-		for (int u = 0; u < width; u++)
+		for (int u = 0; u < map.width; u++)
 		{
 			bool isTailSquare = false;
 			for (int j = 0; j < nBody; j++)
@@ -73,23 +159,23 @@ void Draw()
 	std::cout << "Body length: " << nBody << std::endl;
 }
 
-void Input()
+void Game::Input()
 {
 	if (_kbhit())
 	{
 		switch (_getch())
 		{
 		case 'a':
-			dir = LEFT;
+			snake.dir = LEFT;
 			break;
 		case 's':
-			dir = DOWN;
+			snake.dir = DOWN;
 			break;
 		case 'd':
-			dir = RIGHT;
+			snake.dir = RIGHT;
 			break;
 		case 'w':
-			dir = UP;
+			snake.dir = UP;
 			break;
 		default:
 			break;
@@ -97,81 +183,44 @@ void Input()
 	}
 }
 
-void Logic()
+void Game::Logic()
 {
-	int prevX = snakeX;
-	int prevY = snakeY;
+	snake.expandBody();
+	snake.move();
 
-	int prev2X;
-	int prev2Y;
+	if (snake.x < 1) {snake.x = map.width - 2;}
+	else if (snake.x > map.width - 2) { snake.x = 1; }
 
-	for (int i = 0; i < nBody; i++)
-	{
-		prev2X = bodyX[i];
-		prev2Y = bodyY[i];
-		bodyX[i] = prevX;
-		bodyY[i] = prevY;
-		prevX = prev2X;
-		prevY = prev2Y;
-	}
+	if (snake.y < 1) { snake.y = map.height - 2; }
+	else if (snake.y > map.height - 2) { snake.y = 1; }
 
-	switch (dir)
-	{
-	case LEFT:
-		snakeX--;
-		break;
-	case RIGHT:
-		snakeX++;
-		break;
-	case UP:
-		snakeY--;
-		break;
-	case DOWN:
-		snakeY++;
-		break;
-	default:
-		break;
-	}
-
-	if (snakeX < 1) {snakeX = width - 2;}
-	else if (snakeX > width - 2) { snakeX = 1; }
-
-	if (snakeY < 1) { snakeY = height - 2; }
-	else if (snakeY > height - 2) { snakeY = 1; }
-
-	for (int i = 0; i < nBody; i++)
-	{
-		if (snakeX == bodyX[i] && snakeY == bodyY[i])
-		{
-			gameEnded = true;
-			return;
-		}
-	}
+	gameEnded = snake.checkForBodyCollision();
 
 	// Fruit spawing. NOTE: should check that the fruits coords are not on the snake
-	if (snakeX == fruitX && snakeY == fruitY)
+	if (snake.x == fruit.x && snake.y == fruit.y)
 	{
-		fruitX = (rand() % (width - 2)) + 1;
-		fruitY = (rand() % (height - 2)) + 1;
+		fruit.x = (rand() % (map.width - 2)) + 1;
+		fruit.y = (rand() % (map.height - 2)) + 1;
 		
-		bodyX[nBody] = snakeX;
-		bodyY[nBody] = snakeY;
-		nBody++;
+		/*bodyX[nBody] = snakeX;
+		bodyY[nBody] = snakeY;*/
+		snake.elongate();
 	}
 }
 
 int main()
 {
-	snakeX = 15;
-	snakeY = 10;
-	fruitX = (rand() % (width - 2)) + 1;
-	fruitY = (rand() % (height - 2)) + 1;
+	Game game;
+	game.snake.x = 15;
+	game.snake.y = 10;
+	game.fruit.x = (rand() % (game.map.width - 2)) + 1;
+	game.fruit.y = (rand() % (game.map.height - 2)) + 1;
 
-	while (!gameEnded)
+	while (!game.gameEnded)
 	{
-		Draw();
-		Input();
-		Logic();
+		game.Draw();
+		game.Input();
+		game.Logic();
 		Sleep(300);
 	}
 

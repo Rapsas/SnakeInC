@@ -8,6 +8,11 @@ public :
 	const int width = 32;
 	const int height = 20;
 	const char wallSymbol = '#';
+	
+	void DrawWall()
+	{
+		std::cout << wallSymbol;
+	}
 	// Later would like to make it that the map class itself is responsible for its border logic. Likw whether to wrap around the map or kill the snake
 	/*void borderLogic() 
 	{
@@ -26,15 +31,10 @@ enum Direction
 class Snake 
 {
 private:
-	int bodyX[100], bodyY[100];
-	int nBody = 0;
 	const char headSymbol = 'O';
 	const char bodySymbol = 'o';
 
-public:
-	Direction dir;
-	int x, y;
-	void expandBody() 
+	void moveBody()
 	{
 		int prevX = x;
 		int prevY = y;
@@ -53,21 +53,49 @@ public:
 		}
 	}
 
-	bool checkForBodyCollision()
-	{
-		for (int i = 0; i < nBody; i++)
-		{
-			return x == bodyX[i] && y == bodyY[i];
-		}
-	}
-
 	void elongate()
 	{
 		nBody++;
 	}
 
+public:
+	Direction dir;
+	int x;
+	int y;
+	int bodyX[100];
+	int bodyY[100];
+	int nBody;
+
+	Snake()
+	{
+		x = 15;
+		y = 10;
+		nBody = 0;
+	}
+
+	bool checkForBodyCollision()
+	{
+		for (int i = 0; i < nBody; i++)
+		{
+			if (x == bodyX[i] && y == bodyY[i])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void Consume()
+	{
+		//Different food types will have different effects maybe one day in the future
+		elongate();
+	}
+
 	void move()
 	{
+		moveBody();
+
 		switch (dir)
 		{
 		case LEFT:
@@ -85,16 +113,38 @@ public:
 		default:
 			break;
 		}
+
+	}
+
+	void DrawHead() 
+	{
+		std::cout << headSymbol;
+	}
+
+	void DrawBody()
+	{
+		std::cout << bodySymbol;
 	}
 };
 
 class Fruit 
 {
-public:
-	int x, y;
-
 private:
 	const char fruitSymbol = 'F';
+
+public:
+	int x;
+	int y;
+
+	Fruit()
+	{
+
+	}
+
+	void Draw()
+	{
+		std::cout << fruitSymbol;
+	}
 };
 
 class Game
@@ -108,8 +158,11 @@ public:
 	void Draw();
 	void Input();
 
-private:
-
+	Game()
+	{
+		fruit.x = (rand() % (map.width - 2)) + 1;
+		fruit.y = (rand() % (map.height - 2)) + 1;
+	}
 };
 
 
@@ -122,30 +175,30 @@ void Game::Draw()
 		for (int u = 0; u < map.width; u++)
 		{
 			bool isTailSquare = false;
-			for (int j = 0; j < nBody; j++)
+			for (int j = 0; j < snake.nBody; j++)
 			{
-				if (bodyX[j] == u && bodyY[j] == i)
+				if (snake.bodyX[j] == u && snake.bodyY[j] == i)
 				{
 					isTailSquare = true;
 					break;
 				}
 			}
 
-			if (i == 0 || u == 0 || i == height - 1 || u == width - 1)
+			if (i == 0 || u == 0 || i == map.height - 1 || u == map.width - 1)
 			{
-				std::cout << wallSymbol;
+				map.DrawWall();
 			}
-			else if (snakeX == u && snakeY == i)
+			else if (snake.x == u && snake.y == i)
 			{
-				std::cout << snakeHead;
+				snake.DrawHead();
 			}
-			else if (fruitX == u && fruitY == i)
+			else if (fruit.x == u && fruit.y == i)
 			{
-				std::cout << fruitSymbol;
+				fruit.Draw();
 			}
 			else if (isTailSquare)
 			{
-				std::cout << snakeBody;
+				snake.DrawBody();
 			}
 			else
 			{
@@ -154,9 +207,9 @@ void Game::Draw()
 		}
 		std::cout << std::endl;
 	}
-	std::cout << "Fruit coords: " << fruitX << "; " << fruitY << std::endl;
-	std::cout << "Snake coords: " << snakeX << "; " << snakeY << std::endl;
-	std::cout << "Body length: " << nBody << std::endl;
+	std::cout << "Fruit coords: " << fruit.x << "; " << fruit.y << std::endl;
+	std::cout << "Snake coords: " << snake.x << "; " << snake.y << std::endl;
+	std::cout << "Body length: " << snake.nBody << std::endl;
 }
 
 void Game::Input()
@@ -185,7 +238,6 @@ void Game::Input()
 
 void Game::Logic()
 {
-	snake.expandBody();
 	snake.move();
 
 	if (snake.x < 1) {snake.x = map.width - 2;}
@@ -199,22 +251,16 @@ void Game::Logic()
 	// Fruit spawing. NOTE: should check that the fruits coords are not on the snake
 	if (snake.x == fruit.x && snake.y == fruit.y)
 	{
+		snake.Consume();
+
 		fruit.x = (rand() % (map.width - 2)) + 1;
 		fruit.y = (rand() % (map.height - 2)) + 1;
-		
-		/*bodyX[nBody] = snakeX;
-		bodyY[nBody] = snakeY;*/
-		snake.elongate();
 	}
 }
 
 int main()
 {
 	Game game;
-	game.snake.x = 15;
-	game.snake.y = 10;
-	game.fruit.x = (rand() % (game.map.width - 2)) + 1;
-	game.fruit.y = (rand() % (game.map.height - 2)) + 1;
 
 	while (!game.gameEnded)
 	{
